@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – Warpspeed{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+    {% if current_user.role == 'owner' %}
+    <form method="POST" action="{{ url_for('dashboard.reset') }}"
+          onsubmit="return confirm('⚠️ This will DELETE all data and re-seed. Are you sure?');">
+        <button type="submit" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset System
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<!-- ── Stat Cards ──────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-primary-gradient">
+            <div class="stat-value">{{ total_orders }}</div>
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-icon"><i class="bi bi-cart3"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-accent-gradient">
+            <div class="stat-value">{{ active_orders }}</div>
+            <div class="stat-label">In Production</div>
+            <div class="stat-icon"><i class="bi bi-gear"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-success-gradient">
+            <div class="stat-value">{{ ready_orders }}</div>
+            <div class="stat-label">Ready to Ship</div>
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-info-gradient">
+            <div class="stat-value">{{ dispatched_orders }}</div>
+            <div class="stat-label">Dispatched</div>
+            <div class="stat-icon"><i class="bi bi-truck"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- ── Machines ───────────────────────────────────── -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-gear"></i> Machines</div>
+            <div class="card-body">
+                <p class="mb-1"><strong>{{ machines_running }}</strong> / {{ machines_total }} running</p>
+                {% if machines_breakdown > 0 %}
+                <p class="text-danger mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>{{ machines_breakdown }}</strong> in breakdown
+                </p>
+                {% endif %}
+                <div class="progress mt-2">
+                    <div class="progress-bar" style="width: {{ (machines_running / machines_total * 100) if machines_total > 0 else 0 }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── QC Pending ────────────────────────────────── -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-clipboard-check"></i> Quality Control</div>
+            <div class="card-body">
+                {% if qc_pending > 0 %}
+                <p class="mb-0"><strong>{{ qc_pending }}</strong> rolls awaiting inspection</p>
+                {% else %}
+                <p class="text-muted mb-0">All rolls inspected ✅</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Low Stock Alerts ──────────────────────────── -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-exclamation-triangle"></i> Stock Alerts</div>
+            <div class="card-body">
+                {% if low_stock %}
+                <ul class="list-unstyled mb-0">
+                    {% for m in low_stock %}
+                    <li class="text-danger"><i class="bi bi-arrow-down-circle"></i> {{ m.name }} – Low stock</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">All stock levels OK ✅</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- ── Orders by Status Chart ────────────────────── -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-bar-chart"></i> Orders by Status</div>
+            <div class="card-body">
+                <canvas id="statusChart" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Monthly P&L ───────────────────────────────── -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-cash-stack"></i> Monthly P&L</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr><td>Revenue</td><td class="text-end fw-bold text-success">₹{{ "{:,.0f}".format(pnl.revenue) }}</td></tr>
+                    <tr><td>Material Cost</td><td class="text-end text-danger">-₹{{ "{:,.0f}".format(pnl.material_cost) }}</td></tr>
+                    <tr><td>Wages</td><td class="text-end text-danger">-₹{{ "{:,.0f}".format(pnl.wages) }}</td></tr>
+                    <tr><td>Overhead</td><td class="text-end text-danger">-₹{{ "{:,.0f}".format(pnl.overhead) }}</td></tr>
+                    <tr class="table-active">
+                        <td class="fw-bold">Profit</td>
+                        <td class="text-end fw-bold {{ 'text-success' if pnl.profit >= 0 else 'text-danger' }}">
+                            ₹{{ "{:,.0f}".format(pnl.profit) }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Orders by Status bar chart
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ status_counts.keys() | list | tojson }},
+            datasets: [{
+                label: 'Orders',
+                data: {{ status_counts.values() | list | tojson }},
+                backgroundColor: [
+                    '#1565c0', '#e65100', '#7b1fa2',
+                    '#f57f17', '#2e7d32', '#00695c'
+                ],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+</script>
+{% endblock %}

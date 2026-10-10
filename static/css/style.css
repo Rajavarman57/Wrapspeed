@@ -1,0 +1,299 @@
+/* ── Warpspeed Custom Styles ─────────────────────────────── */
+
+:root {
+    --ws-primary: #1a237e;      /* Deep indigo */
+    --ws-primary-light: #3949ab;
+    --ws-accent: #ff6f00;       /* Amber accent */
+    --ws-accent-light: #ffa040;
+    --ws-success: #2e7d32;
+    --ws-danger: #c62828;
+    --ws-warning: #f9a825;
+    --ws-info: #0277bd;
+    --ws-bg: #f4f6f9;
+    --ws-card-bg: #ffffff;
+    --ws-sidebar-bg: #1a237e;
+    --ws-sidebar-text: #e8eaf6;
+    --ws-text: #263238;
+    --ws-text-muted: #78909c;
+    --ws-border: #e0e0e0;
+    --ws-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --ws-radius: 10px;
+}
+
+body {
+    background-color: var(--ws-bg);
+    color: var(--ws-text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+}
+
+/* ── Navbar ──────────────────────────────────────────────── */
+.navbar-ws {
+    background: linear-gradient(135deg, var(--ws-primary) 0%, var(--ws-primary-light) 100%);
+    box-shadow: var(--ws-shadow);
+    padding: 0.6rem 1rem;
+}
+.navbar-ws .navbar-brand {
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+    color: #fff !important;
+}
+.navbar-ws .navbar-brand span {
+    color: var(--ws-accent-light);
+}
+.navbar-ws .nav-link {
+    color: var(--ws-sidebar-text) !important;
+    font-weight: 500;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+    font-size: 0.92rem;
+}
+.navbar-ws .nav-link:hover,
+.navbar-ws .nav-link.active {
+    background: rgba(255,255,255,0.15);
+    color: #fff !important;
+}
+.navbar-ws .nav-link i {
+    margin-right: 4px;
+}
+
+/* ── Page header ─────────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.page-header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--ws-primary);
+    margin: 0;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card {
+    border: none;
+    border-radius: var(--ws-radius);
+    box-shadow: var(--ws-shadow);
+    transition: transform 0.15s, box-shadow 0.15s;
+    background: var(--ws-card-bg);
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--ws-border);
+    font-weight: 600;
+    color: var(--ws-primary);
+}
+
+/* ── Stat cards (dashboard) ──────────────────────────────── */
+.stat-card {
+    padding: 1.2rem;
+    border-radius: var(--ws-radius);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.stat-card .stat-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.stat-card .stat-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.5rem;
+    opacity: 0.25;
+}
+.stat-card.bg-primary-gradient {
+    background: linear-gradient(135deg, var(--ws-primary) 0%, var(--ws-primary-light) 100%);
+}
+.stat-card.bg-accent-gradient {
+    background: linear-gradient(135deg, var(--ws-accent) 0%, var(--ws-accent-light) 100%);
+}
+.stat-card.bg-success-gradient {
+    background: linear-gradient(135deg, var(--ws-success) 0%, #43a047 100%);
+}
+.stat-card.bg-danger-gradient {
+    background: linear-gradient(135deg, var(--ws-danger) 0%, #e53935 100%);
+}
+.stat-card.bg-info-gradient {
+    background: linear-gradient(135deg, var(--ws-info) 0%, #0288d1 100%);
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+.table {
+    font-size: 0.9rem;
+}
+.table thead th {
+    background: var(--ws-primary);
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    border: none;
+    padding: 0.7rem 0.75rem;
+}
+.table tbody tr {
+    transition: background 0.15s;
+}
+.table tbody tr:hover {
+    background: #e8eaf6;
+}
+
+/* ── Badges / status ─────────────────────────────────────── */
+.badge-status {
+    padding: 0.35em 0.7em;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
+}
+.badge-NEW        { background: #e3f2fd; color: #1565c0; }
+.badge-WEAVING    { background: #fff3e0; color: #e65100; }
+.badge-DYEING     { background: #f3e5f5; color: #7b1fa2; }
+.badge-QC         { background: #fff8e1; color: #f57f17; }
+.badge-READY      { background: #e8f5e9; color: #2e7d32; }
+.badge-DISPATCHED { background: #e0f2f1; color: #00695c; }
+
+.badge-PENDING    { background: #fff8e1; color: #f57f17; }
+.badge-PASS       { background: #e8f5e9; color: #2e7d32; }
+.badge-REWORK     { background: #fff3e0; color: #e65100; }
+.badge-REJECT     { background: #ffebee; color: #c62828; }
+
+.badge-RUNNING    { background: #e8f5e9; color: #2e7d32; }
+.badge-IDLE       { background: #eceff1; color: #546e7a; }
+.badge-BREAKDOWN  { background: #ffebee; color: #c62828; }
+.badge-DONE       { background: #e0f2f1; color: #00695c; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn-ws {
+    background: linear-gradient(135deg, var(--ws-primary) 0%, var(--ws-primary-light) 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    font-weight: 600;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-ws:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26,35,126,0.3);
+    color: #fff;
+}
+.btn-ws-accent {
+    background: linear-gradient(135deg, var(--ws-accent) 0%, var(--ws-accent-light) 100%);
+}
+.btn-ws-accent:hover {
+    box-shadow: 0 4px 12px rgba(255,111,0,0.3);
+}
+
+/* ── Forms ────────────────────────────────────────────────── */
+.form-control:focus, .form-select:focus {
+    border-color: var(--ws-primary-light);
+    box-shadow: 0 0 0 0.2rem rgba(57,73,171,0.25);
+}
+
+/* ── Login page ──────────────────────────────────────────── */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--ws-primary) 0%, #283593 50%, var(--ws-primary-light) 100%);
+}
+.login-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+}
+.login-card h2 {
+    color: var(--ws-primary);
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+}
+.login-card .subtitle {
+    color: var(--ws-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ── Flash messages ──────────────────────────────────────── */
+.alert {
+    border-radius: 8px;
+    border: none;
+    font-weight: 500;
+}
+
+/* ── Progress bars ───────────────────────────────────────── */
+.progress {
+    height: 8px;
+    border-radius: 4px;
+    background: #e8eaf6;
+}
+.progress-bar {
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--ws-primary) 0%, var(--ws-primary-light) 100%);
+}
+
+/* ── Machine board cards ─────────────────────────────────── */
+.machine-card {
+    border-left: 4px solid var(--ws-primary);
+    transition: all 0.2s;
+}
+.machine-card.status-RUNNING {
+    border-left-color: var(--ws-success);
+}
+.machine-card.status-BREAKDOWN {
+    border-left-color: var(--ws-danger);
+    animation: pulse-border 2s infinite;
+}
+@keyframes pulse-border {
+    0%, 100% { border-left-color: var(--ws-danger); }
+    50% { border-left-color: #ff8a80; }
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .stat-card .stat-value { font-size: 1.5rem; }
+    .page-header h1 { font-size: 1.3rem; }
+}
+
+/* ── Content wrapper ─────────────────────────────────────── */
+.content-wrapper {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--ws-text-muted);
+}
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}

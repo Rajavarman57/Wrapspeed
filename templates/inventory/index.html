@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Inventory – Warpspeed{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-box-seam"></i> Inventory</h1>
+    <button class="btn btn-ws" data-bs-toggle="modal" data-bs-target="#receiveModal">
+        <i class="bi bi-plus-circle"></i> Receive Stock
+    </button>
+</div>
+
+<!-- ── Stock Summary Table ────────────────────────────── -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Colour</th>
+                        <th class="text-end">On Hand (kg)</th>
+                        <th class="text-end">Reserved (kg)</th>
+                        <th class="text-end">Available (kg)</th>
+                        <th class="text-end">Reorder Level</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in summary %}
+                    <tr>
+                        <td class="fw-semibold">{{ item.name }}</td>
+                        <td>{{ item.colour }}</td>
+                        <td class="text-end">{{ "%.1f"|format(item.on_hand) }}</td>
+                        <td class="text-end">{{ "%.1f"|format(item.reserved) }}</td>
+                        <td class="text-end">{{ "%.1f"|format(item.available) }}</td>
+                        <td class="text-end">{{ "%.0f"|format(item.reorder_level) }}</td>
+                        <td>
+                            {% if item.low %}
+                            <span class="badge-status badge-REJECT">LOW STOCK</span>
+                            {% else %}
+                            <span class="badge-status badge-PASS">OK</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── Receive Stock Modal ────────────────────────────── -->
+<div class="modal fade" id="receiveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('inventory.receive') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Receive Stock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="material_id" class="form-label">Material</label>
+                        <select class="form-select" name="material_id" id="material_id" required>
+                            <option value="">Select material...</option>
+                            {% for m in materials %}
+                            <option value="{{ m.id }}">{{ m.name }} ({{ m.colour }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="qty" class="form-label">Quantity (kg)</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control"
+                               name="qty" id="qty" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lot_no" class="form-label">Lot Number</label>
+                        <input type="text" class="form-control" name="lot_no" id="lot_no"
+                               placeholder="e.g. LOT-2024-001" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="supplier_id" class="form-label">Supplier</label>
+                        <select class="form-select" name="supplier_id" id="supplier_id" required>
+                            <option value="">Select supplier...</option>
+                            {% for s in suppliers %}
+                            <option value="{{ s.id }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="unit_cost" class="form-label">Unit Cost (₹/kg)</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control"
+                               name="unit_cost" id="unit_cost" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-ws">
+                        <i class="bi bi-check-lg"></i> Receive
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

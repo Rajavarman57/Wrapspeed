@@ -1,0 +1,31 @@
+<div id="machine-board-container" hx-get="/dashboard/machine-board" hx-trigger="every 5s" hx-swap="outerHTML" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h3 class="text-base font-bold text-slate-900">Machine Status Board</h3>
+            <p class="text-xs text-slate-500">Live operational state (Auto-refreshes every 5s via HTMX)</p>
+        </div>
+        <span class="inline-flex items-center text-xs text-emerald-600 font-medium">
+            <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-ping"></span> Live Polling
+        </span>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {% for m in machines %}
+        <div class="p-3 rounded-lg border text-center transition
+            {% if m.status == 'RUNNING' %}bg-emerald-50 border-emerald-300 text-emerald-950
+            {% elif m.status == 'BREAKDOWN' %}bg-rose-50 border-rose-300 text-rose-950
+            {% else %}bg-slate-50 border-slate-200 text-slate-700{% endif %}">
+            <div class="text-xs font-mono uppercase text-slate-500">{{ m.type }}</div>
+            <div class="text-sm font-bold mt-1">{{ m.name }}</div>
+            <div class="mt-2">
+                <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase
+                    {% if m.status == 'RUNNING' %}bg-emerald-200 text-emerald-800
+                    {% elif m.status == 'BREAKDOWN' %}bg-rose-200 text-rose-800
+                    {% else %}bg-slate-200 text-slate-700{% endif %}">
+                    {{ m.status }}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>

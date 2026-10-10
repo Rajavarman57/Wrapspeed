@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} – Warpspeed{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-cart3"></i> Order #{{ order.id }}</h1>
+    <span class="badge-status badge-{{ order.status }}" style="font-size: 1rem;">{{ order.status }}</span>
+</div>
+
+<div class="row g-3">
+    <!-- ── Order Info ─────────────────────────────────── -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">Order Details</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td class="text-muted">Buyer</td><td class="fw-bold">{{ order.buyer.name }}</td></tr>
+                    <tr><td class="text-muted">Fabric</td><td>{{ order.fabric_type }}</td></tr>
+                    <tr><td class="text-muted">Colour</td><td>{{ order.colour }}</td></tr>
+                    <tr><td class="text-muted">Meters</td><td>{{ "%.0f"|format(order.meters) }} m</td></tr>
+                    <tr><td class="text-muted">Price</td><td>₹{{ "%.0f"|format(order.price_per_meter) }}/m</td></tr>
+                    <tr><td class="text-muted">Total Value</td><td class="fw-bold">₹{{ "{:,.0f}".format(order.meters * order.price_per_meter) }}</td></tr>
+                    <tr><td class="text-muted">Deadline</td><td>{{ order.deadline.strftime('%Y-%m-%d') }}</td></tr>
+                    <tr><td class="text-muted">Created</td><td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── BOM & Availability ─────────────────────────── -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">Bill of Materials</div>
+            <div class="card-body">
+                {% if bom %}
+                <table class="table table-sm mb-3">
+                    <thead><tr><th>Material</th><th class="text-end">Required (kg)</th></tr></thead>
+                    <tbody>
+                        {% for item in bom %}
+                        <tr><td>{{ item.name }}</td><td class="text-end">{{ "%.2f"|format(item.kg) }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if order.status == 'NEW' %}
+                    {% if availability.can_start %}
+                    <div class="alert alert-success py-2">
+                        <i class="bi bi-check-circle"></i> All materials available — ready to confirm!
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning py-2">
+                        <i class="bi bi-exclamation-triangle"></i> <strong>Shortages:</strong>
+                        <ul class="mb-0 mt-1">
+                            {% for s in availability.shortages %}
+                            <li>{{ s.name }}: short by {{ "%.2f"|format(s.short_by_kg) }} kg</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if current_user.role in ['owner', 'store'] %}
+                    <form method="POST" action="{{ url_for('orders.confirm', order_id=order.id) }}">
+                        <button type="submit" class="btn btn-ws w-100"
+                                {{ 'disabled' if not availability.can_start }}>
+                            <i class="bi bi-check-lg"></i> Confirm Order
+                        </button>
+                    </form>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Cost Breakdown ────────────────────────────────── -->
+{% if cost %}
+<div class="card mt-3">
+    <div class="card-header"><i class="bi bi-calculator"></i> Cost Breakdown</div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-sm">
+                    <tr><td>Yarn Cost</td><td class="text-end">₹{{ "{:,.0f}".format(cost.yarn) }}</td></tr>
+                    <tr><td>Wages</td><td class="text-end">₹{{ "{:,.0f}".format(cost.wages) }}</td></tr>
+                    <tr><td>Overhead</td><td class="text-end">₹{{ "{:,.0f}".format(cost.overhead) }}</td></tr>
+                    <tr class="table-active"><td class="fw-bold">Total</td><td class="text-end fw-bold">₹{{ "{:,.0f}".format(cost.total) }}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-sm">
+                    <tr><td>Passed Meters</td><td class="text-end">{{ cost.passed_meters }} m</td></tr>
+                    <tr><td>Cost/Meter</td><td class="text-end">₹{{ "%.2f"|format(cost.cost_per_meter) }}</td></tr>
+                    <tr><td>Margin/Meter</td><td class="text-end {{ 'text-success' if cost.margin_per_meter >= 0 else 'text-danger' }}">₹{{ "%.2f"|format(cost.margin_per_meter) }}</td></tr>
+                    <tr><td>Yield Variance</td><td class="text-end">{{ cost.yield_variance }} m</td></tr>
+                </table>
+                <small class="text-muted">{{ cost.formula }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── Work Orders ───────────────────────────────────── -->
+{% if order.work_orders %}
+<div class="card mt-3">
+    <div class="card-header"><i class="bi bi-gear"></i> Work Orders</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th><th>Stage</th><th>Machine</th><th>Status</th>
+                        <th class="text-end">Produced</th><th class="text-end">Target</th><th>Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wo in order.work_orders %}
+                    <tr>
+                        <td>{{ wo.id }}</td>
+                        <td><span class="badge-status badge-{{ wo.stage }}">{{ wo.stage }}</span></td>
+                        <td>{{ wo.machine.name }}</td>
+                        <td><span class="badge-status badge-{{ wo.status }}">{{ wo.status }}</span></td>
+                        <td class="text-end">{{ "%.1f"|format(wo.produced_meters) }} m</td>
+                        <td class="text-end">{{ "%.0f"|format(wo.target_meters) }} m</td>
+                        <td style="min-width:120px;">
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {{ (wo.produced_meters / wo.target_meters * 100) if wo.target_meters > 0 else 0 }}%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── Fabric Rolls ──────────────────────────────────── -->
+{% if order.fabric_rolls %}
+<div class="card mt-3">
+    <div class="card-header"><i class="bi bi-circle"></i> Fabric Rolls</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>Code</th><th>Length</th><th>QC Status</th><th>Yarn Lot</th><th>Defect</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in order.fabric_rolls %}
+                    <tr>
+                        <td class="fw-bold">{{ r.code }}</td>
+                        <td>{{ r.length_m }} m</td>
+                        <td><span class="badge-status badge-{{ r.qc_status }}">{{ r.qc_status }}</span></td>
+                        <td>{{ r.yarn_lot_no }}</td>
+                        <td>{{ r.defect_type or '–' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="mt-3">
+    <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Orders
+    </a>
+</div>
+{% endblock %}

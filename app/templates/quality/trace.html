@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Trace Roll {{ trace.roll_code }} - Warpspeed{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <a href="/quality" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">&larr; Back to Quality</a>
+            <h1 class="text-2xl font-bold text-slate-900 mt-1">Roll Genealogy: {{ trace.roll_code }}</h1>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
+            {% if trace.current_qc == 'PASS' %}bg-emerald-100 text-emerald-800
+            {% elif trace.current_qc == 'REWORK' %}bg-amber-100 text-amber-800
+            {% elif trace.current_qc == 'REJECT' %}bg-rose-100 text-rose-800
+            {% else %}bg-slate-100 text-slate-700{% endif %}">
+            QC: {{ trace.current_qc }}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- QR Code Card (In-memory generated, no disk writes!) -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-center">
+            <h3 class="text-sm font-bold uppercase text-slate-500 mb-3">Roll QR Tag</h3>
+            <div class="flex justify-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <img src="{{ trace.qr_base64 }}" alt="QR Code for {{ trace.roll_code }}" class="w-44 h-44">
+            </div>
+            <div class="font-mono text-sm font-bold text-indigo-950 mt-3">{{ trace.roll_code }}</div>
+            <p class="text-xs text-slate-400 mt-1">Generated in RAM &bull; 0 disk writes</p>
+        </div>
+
+        <!-- Specifications & Genealogy -->
+        <div class="md:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h3 class="text-sm font-bold uppercase text-slate-500">Trace Genealogy</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <div class="text-xs text-slate-400">Order ID</div>
+                    <div class="font-bold text-slate-900 mt-0.5">Order #{{ trace.order_id }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">Fabric</div>
+                    <div class="font-semibold text-slate-900 mt-0.5">{{ trace.fabric_type }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">Machine Run On</div>
+                    <div class="font-semibold text-slate-900 mt-0.5">{{ trace.machine or 'N/A' }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">Yarn Batch Lot</div>
+                    <div class="font-mono text-slate-900 mt-0.5">{{ trace.yarn_lot or 'LOT-CY30-01' }}</div>
+                </div>
+            </div>
+
+            <!-- Dispatch Status -->
+            <div class="pt-4 border-t border-slate-100">
+                <div class="text-xs text-slate-400 uppercase font-semibold">Dispatch Shipment</div>
+                {% if trace.dispatch %}
+                <div class="mt-2 p-3 bg-emerald-50 rounded-lg text-xs text-emerald-900 space-y-1">
+                    <div><strong>Truck:</strong> {{ trace.dispatch.truck_no }}</div>
+                    <div><strong>Buyer:</strong> {{ trace.dispatch.buyer }}</div>
+                    <div><strong>Shipped On:</strong> {{ trace.dispatch.date }}</div>
+                </div>
+                {% else %}
+                <div class="mt-2 text-xs text-slate-500 italic">Not yet dispatched. Staged in finished goods warehouse.</div>
+                {% endif %}
+            </div>
+
+            <!-- QC Decision History -->
+            <div class="pt-4 border-t border-slate-100">
+                <div class="text-xs text-slate-400 uppercase font-semibold mb-2">Inspection History (Append-Only)</div>
+                <div class="space-y-2">
+                    {% for h in trace.qc_history %}
+                    <div class="text-xs p-2.5 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold {% if h.status == 'PASS' %}text-emerald-700{% elif h.status == 'REWORK' %}text-amber-700{% else %}text-rose-700{% endif %}">
+                                [{{ h.status }}]
+                            </span>
+                            {% if h.defect_type %}&bull; {{ h.defect_type }}{% endif %}
+                            {% if h.notes %}<span class="text-slate-500">&mdash; {{ h.notes }}</span>{% endif %}
+                        </div>
+                        <span class="text-[10px] text-slate-400">{{ h.timestamp }}</span>
+                    </div>
+                    {% else %}
+                    <div class="text-xs text-slate-400 italic">Awaiting initial inspection.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

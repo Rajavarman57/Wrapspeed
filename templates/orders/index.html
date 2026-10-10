@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Orders – Warpspeed{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-cart3"></i> Orders</h1>
+    {% if current_user.role in ['owner', 'store'] %}
+    <a href="{{ url_for('orders.new') }}" class="btn btn-ws">
+        <i class="bi bi-plus-circle"></i> New Order
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Buyer</th>
+                        <th>Fabric</th>
+                        <th>Colour</th>
+                        <th class="text-end">Meters</th>
+                        <th class="text-end">₹/m</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in orders %}
+                    <tr>
+                        <td class="fw-bold">{{ o.id }}</td>
+                        <td>{{ o.buyer.name }}</td>
+                        <td>{{ o.fabric_type }}</td>
+                        <td>{{ o.colour }}</td>
+                        <td class="text-end">{{ "%.0f"|format(o.meters) }}</td>
+                        <td class="text-end">₹{{ "%.0f"|format(o.price_per_meter) }}</td>
+                        <td>{{ o.deadline.strftime('%Y-%m-%d') }}</td>
+                        <td><span class="badge-status badge-{{ o.status }}">{{ o.status }}</span></td>
+                        <td>
+                            <a href="{{ url_for('orders.detail', order_id=o.id) }}"
+                               class="btn btn-sm btn-outline-primary">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-cart-x"></i>
+            <p>No orders yet. Create your first order!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

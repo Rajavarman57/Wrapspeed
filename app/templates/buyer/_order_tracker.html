@@ -1,0 +1,32 @@
+<div id="tracker-{{ order.id }}" hx-get="/buyer/orders/{{ order.id }}/tracker" hx-trigger="every 5s" hx-swap="outerHTML" class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+    <div class="flex items-center justify-between">
+        <div>
+            <span class="font-bold text-slate-900 font-mono">Order #{{ order.id }}</span>
+            <span class="text-xs text-slate-500 ml-2">{{ order.fabric_type }} ({{ order.colour }}) &bull; {{ order.meters|int }}m</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase
+                {% if order.status == 'NEW' %}bg-slate-200 text-slate-700
+                {% elif order.status in ['SPINNING', 'WEAVING', 'DYEING'] %}bg-blue-100 text-blue-800
+                {% elif order.status == 'QC' %}bg-amber-100 text-amber-800
+                {% elif order.status == 'READY' %}bg-emerald-100 text-emerald-800
+                {% else %}bg-purple-100 text-purple-800{% endif %}">
+                {{ order.status }}
+            </span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Live Polling (5s)"></span>
+        </div>
+    </div>
+
+    <!-- Stepper Pipeline -->
+    <div class="grid grid-cols-5 gap-2 text-center text-xs">
+        {% set stages = ['NEW', 'WEAVING', 'DYEING', 'QC', 'DISPATCHED'] %}
+        {% for s in stages %}
+        <div class="p-1.5 rounded font-semibold text-[11px]
+            {% if order.status == s %}bg-indigo-600 text-white shadow-sm
+            {% elif (s == 'NEW' and order.status != 'NEW') or (s == 'WEAVING' and order.status in ['DYEING', 'QC', 'READY', 'DISPATCHED']) or (s == 'DYEING' and order.status in ['QC', 'READY', 'DISPATCHED']) or (s == 'QC' and order.status in ['READY', 'DISPATCHED']) or (s == 'DISPATCHED' and order.status == 'DISPATCHED') %}bg-emerald-100 text-emerald-800
+            {% else %}bg-slate-100 text-slate-400{% endif %}">
+            {{ s }}
+        </div>
+        {% endfor %}
+    </div>
+</div>

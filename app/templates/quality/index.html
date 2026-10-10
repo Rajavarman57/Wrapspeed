@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Quality Control - Warpspeed{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Quality Control (QC)</h1>
+            <p class="text-sm text-slate-500">Append-only roll inspections and defect genealogy</p>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Inspection Queue (Left 2 cols) -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Pending Inspection Queue</h3>
+                        <p class="text-xs text-slate-500">Newly cut rolls awaiting inspector approval</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                        {{ pending_rolls|length }} Pending
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-semibold text-xs uppercase">
+                            <tr>
+                                <th class="px-4 py-3">Roll Code</th>
+                                <th class="px-4 py-3">Order</th>
+                                <th class="px-4 py-3">Fabric</th>
+                                <th class="px-4 py-3 text-right">Length</th>
+                                <th class="px-4 py-3 text-center">Inspect Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            {% for r in pending_rolls %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-4 py-3 font-mono font-bold text-indigo-900">
+                                    <a href="/quality/trace/{{ r.roll_code }}" class="hover:underline flex items-center space-x-1">
+                                        <span>{{ r.roll_code }}</span>
+                                        <span class="text-slate-400 text-xs">🔍</span>
+                                    </a>
+                                </td>
+                                <td class="px-4 py-3">Order #{{ r.order_id }}</td>
+                                <td class="px-4 py-3">{{ r.order.fabric_type }}</td>
+                                <td class="px-4 py-3 text-right font-mono">{{ r.length_m|int }}m</td>
+                                <td class="px-4 py-3 text-center">
+                                    <div class="inline-flex items-center space-x-1">
+                                        <!-- Pass Form -->
+                                        <form method="POST" action="/quality/record" class="inline">
+                                            <input type="hidden" name="roll_id" value="{{ r.id }}">
+                                            <input type="hidden" name="status" value="PASS">
+                                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-semibold">
+                                                ✓ Pass
+                                            </button>
+                                        </form>
+                                        <!-- Rework Form -->
+                                        <form method="POST" action="/quality/record" class="inline">
+                                            <input type="hidden" name="roll_id" value="{{ r.id }}">
+                                            <input type="hidden" name="status" value="REWORK">
+                                            <input type="hidden" name="defect_type" value="Tension Adjustment">
+                                            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-semibold">
+                                                Rework
+                                            </button>
+                                        </form>
+                                        <!-- Reject Form -->
+                                        <form method="POST" action="/quality/record" class="inline">
+                                            <input type="hidden" name="roll_id" value="{{ r.id }}">
+                                            <input type="hidden" name="status" value="REJECT">
+                                            <input type="hidden" name="defect_type" value="Major Flaw">
+                                            <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-slate-400 text-sm italic">
+                                    No rolls currently in inspection queue.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Inspection Logs (Append-Only) -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-200">
+                    <h3 class="text-base font-bold text-slate-900">Recent Inspection Logs (Append-Only)</h3>
+                    <p class="text-xs text-slate-500">Every decision is an immutable QCRecord row</p>
+                </div>
+                <div class="divide-y divide-slate-100 text-xs">
+                    {% for rec in recent_records %}
+                    <div class="p-3.5 flex items-center justify-between hover:bg-slate-50">
+                        <div class="flex items-center space-x-3">
+                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase
+                                {% if rec.status == 'PASS' %}bg-emerald-100 text-emerald-800
+                                {% elif rec.status == 'REWORK' %}bg-amber-100 text-amber-800
+                                {% else %}bg-rose-100 text-rose-800{% endif %}">
+                                {{ rec.status }}
+                            </span>
+                            <span class="font-mono font-semibold text-slate-900">{{ rec.roll.roll_code }}</span>
+                            {% if rec.defect_type %}
+                            <span class="text-slate-500 font-medium">&bull; Defect: {{ rec.defect_type }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-slate-400">
+                            {{ rec.created_at.strftime('%H:%M:%S') }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Defect Submission Form -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Log Detailed Inspection</h3>
+                <p class="text-xs text-slate-500">Record specific defects and remediation notes</p>
+            </div>
+
+            <form method="POST" action="/quality/record" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Target Roll</label>
+                    <select name="roll_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-mono">
+                        {% for r in pending_rolls %}
+                        <option value="{{ r.id }}">{{ r.roll_code }} ({{ r.length_m|int }}m)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Decision</label>
+                    <select name="status" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-semibold">
+                        <option value="PASS" class="text-emerald-700">PASS (Approved for Dispatch)</option>
+                        <option value="REWORK" class="text-amber-700">REWORK (Requires Remediation)</option>
+                        <option value="REJECT" class="text-rose-700">REJECT (Scrap)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Defect Classification</label>
+                    <input type="text" name="defect_type" placeholder="e.g. Uneven Tension, Oil Stain, Warp Break"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Inspector Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Additional observations..."
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-sm transition mt-2">
+                    Submit QC Record
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

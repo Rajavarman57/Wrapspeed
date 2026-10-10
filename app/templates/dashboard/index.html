@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Warpspeed{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Mill Operations Dashboard</h1>
+            <p class="text-sm text-slate-500">Everest Textile Mills live operational view</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <a href="/orders" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                + New Order
+            </a>
+            <a href="/inventory" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                Receive Yarn
+            </a>
+        </div>
+    </div>
+
+    <!-- Metric Stat Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-xs font-semibold uppercase text-slate-500">Total Orders</div>
+            <div class="text-3xl font-bold text-indigo-950 mt-2">{{ total_orders }}</div>
+            <div class="text-xs text-slate-400 mt-1">Across all manufacturing stages</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-xs font-semibold uppercase text-slate-500">Active Machines</div>
+            <div class="text-3xl font-bold text-emerald-600 mt-2">{{ active_machines }} <span class="text-xs text-slate-500 font-normal">/ {{ machines|length }}</span></div>
+            <div class="text-xs text-emerald-600 mt-1 font-medium">Currently running</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-xs font-semibold uppercase text-slate-500">Pending QC Inspection</div>
+            <div class="text-3xl font-bold text-amber-600 mt-2">{{ pending_qc }}</div>
+            <div class="text-xs text-amber-600 mt-1 font-medium">Fabric rolls awaiting test</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-xs font-semibold uppercase text-slate-500">Low Stock Reorders</div>
+            <div class="text-3xl font-bold {% if low_stock_count > 0 %}text-rose-600{% else %}text-slate-900{% endif %} mt-2">{{ low_stock_count }}</div>
+            <div class="text-xs {% if low_stock_count > 0 %}text-rose-600 font-medium{% else %}text-slate-400{% endif %} mt-1">
+                {% if low_stock_count > 0 %}Immediate purchase required{% else %}All yarn stocks optimal{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Polling Machine Board (HTMX 5s polling) -->
+    {% include "dashboard/machine_board.html" %}
+
+    <!-- Recent Orders Table -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="text-base font-bold text-slate-900">Recent Customer Orders</h3>
+            <a href="/orders" class="text-xs font-medium text-indigo-600 hover:text-indigo-800">View All Orders &rarr;</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+                <thead class="bg-slate-50 text-slate-500 font-semibold text-xs uppercase">
+                    <tr>
+                        <th class="px-5 py-3">Order #</th>
+                        <th class="px-5 py-3">Buyer</th>
+                        <th class="px-5 py-3">Fabric</th>
+                        <th class="px-5 py-3 text-right">Meters</th>
+                        <th class="px-5 py-3">Stage / Status</th>
+                        <th class="px-5 py-3">Deadline</th>
+                        <th class="px-5 py-3 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    {% for o in orders %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-5 py-3.5 font-mono font-semibold text-indigo-900">#{{ o.id }}</td>
+                        <td class="px-5 py-3.5 font-medium text-slate-900">{{ o.buyer.name }}</td>
+                        <td class="px-5 py-3.5">{{ o.fabric_type }} ({{ o.colour }})</td>
+                        <td class="px-5 py-3.5 text-right font-mono font-medium">{{ o.meters|int }}m</td>
+                        <td class="px-5 py-3.5">
+                            <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold uppercase
+                                {% if o.status == 'NEW' %}bg-slate-100 text-slate-700
+                                {% elif o.status in ['SPINNING', 'WEAVING', 'DYEING'] %}bg-blue-100 text-blue-800
+                                {% elif o.status == 'QC' %}bg-amber-100 text-amber-800
+                                {% elif o.status == 'READY' %}bg-emerald-100 text-emerald-800
+                                {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                {{ o.status }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-3.5 text-slate-500">{{ o.deadline }}</td>
+                        <td class="px-5 py-3.5 text-right">
+                            <a href="/orders/{{ o.id }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                                View &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

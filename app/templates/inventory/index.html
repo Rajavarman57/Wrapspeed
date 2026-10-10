@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Inventory Ledger - Warpspeed{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Raw Material Inventory</h1>
+            <p class="text-sm text-slate-500">Append-only dynamic stock ledger (On-Hand, Reserved, Available)</p>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Stock Summary Table -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-900">Live Yarn Stock Status</h3>
+                <p class="text-xs text-slate-500">Calculated on-the-fly from physical receipts, reservations, and consumption</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 font-semibold text-xs uppercase">
+                        <tr>
+                            <th class="px-4 py-3">Material</th>
+                            <th class="px-4 py-3">Colour</th>
+                            <th class="px-4 py-3 text-right">On Hand</th>
+                            <th class="px-4 py-3 text-right">Reserved</th>
+                            <th class="px-4 py-3 text-right font-bold text-indigo-900">Available</th>
+                            <th class="px-4 py-3 text-right">Reorder Pt</th>
+                            <th class="px-4 py-3 text-center">Health</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                        {% for item in stock_summary %}
+                        <tr class="hover:bg-slate-50 {% if item.is_low %}bg-rose-50/40{% endif %}">
+                            <td class="px-4 py-3.5 font-medium text-slate-900">{{ item.name }}</td>
+                            <td class="px-4 py-3.5 text-slate-500">{{ item.colour }}</td>
+                            <td class="px-4 py-3.5 text-right font-mono">{{ item.on_hand|int }} {{ item.unit }}</td>
+                            <td class="px-4 py-3.5 text-right font-mono text-amber-600">{{ item.reserved|int }} {{ item.unit }}</td>
+                            <td class="px-4 py-3.5 text-right font-mono font-bold text-indigo-900">{{ item.available|int }} {{ item.unit }}</td>
+                            <td class="px-4 py-3.5 text-right font-mono text-slate-400">{{ item.reorder_level|int }} {{ item.unit }}</td>
+                            <td class="px-4 py-3.5 text-center">
+                                {% if item.is_low %}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-100 text-rose-700 border border-rose-200">LOW</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">OK</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Receive Stock Form -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Receive Yarn Batch</h3>
+                <p class="text-xs text-slate-500">Record incoming raw shipment into ledger</p>
+            </div>
+
+            <form method="POST" action="/inventory/receive" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Material</label>
+                    <select name="material_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                        {% for m in materials %}
+                        <option value="{{ m.id }}">{{ m.name }} ({{ m.colour }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Lot Number</label>
+                    <input type="text" name="lot_no" required placeholder="e.g. LOT-CY30-02"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Supplier</label>
+                    <select name="supplier_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                        <option value="">-- Select Supplier --</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Quantity (kg)</label>
+                        <input type="number" step="0.1" name="qty" required placeholder="500"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Cost / kg (INR)</label>
+                        <input type="number" step="0.1" name="unit_cost" required placeholder="220"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-sm transition mt-2">
+                    Commit Receipt to Ledger
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

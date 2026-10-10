@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} - Warpspeed{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-2xl font-bold text-slate-900">Order #{{ order.id }}</h1>
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase
+                    {% if order.status == 'NEW' %}bg-slate-100 text-slate-700
+                    {% elif order.status in ['SPINNING', 'WEAVING', 'DYEING'] %}bg-blue-100 text-blue-800
+                    {% elif order.status == 'QC' %}bg-amber-100 text-amber-800
+                    {% elif order.status == 'READY' %}bg-emerald-100 text-emerald-800
+                    {% else %}bg-purple-100 text-purple-800{% endif %}">
+                    {{ order.status }}
+                </span>
+            </div>
+            <p class="text-sm text-slate-500 mt-0.5">{{ order.buyer.name }} &bull; {{ order.fabric_type }} ({{ order.colour }})</p>
+        </div>
+
+        <div>
+            {% if not order.confirmed %}
+            <form method="POST" action="/orders/{{ order.id }}/confirm">
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition shadow-sm">
+                    🔒 Confirm & Reserve Stock (SELECT FOR UPDATE)
+                </button>
+            </form>
+            {% else %}
+            <div class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                ✓ Confirmed & Raw Material Reserved
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Order Specs & BOM (Left 2 cols) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Specifications -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Specifications</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <div class="text-xs text-slate-400">Total Meters</div>
+                        <div class="text-base font-bold text-slate-900 mt-0.5">{{ order.meters|int }} m</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Fabric</div>
+                        <div class="text-base font-semibold text-slate-900 mt-0.5">{{ order.fabric_type }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Colour</div>
+                        <div class="text-base font-semibold text-slate-900 mt-0.5">{{ order.colour }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Delivery Deadline</div>
+                        <div class="text-base font-semibold text-slate-900 mt-0.5">{{ order.deadline }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bill of Materials (BOM) with Wastage -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-200">
+                    <h3 class="text-base font-bold text-slate-900">Bill of Materials (BOM)</h3>
+                    <p class="text-xs text-slate-500">Gross yarn requirements strictly include 8% standard manufacturing wastage</p>
+                </div>
+                <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 font-semibold text-xs uppercase">
+                        <tr>
+                            <th class="px-5 py-3">Material Required</th>
+                            <th class="px-5 py-3 text-right">Net Yarn</th>
+                            <th class="px-5 py-3 text-right text-amber-600">Wastage (8%)</th>
+                            <th class="px-5 py-3 text-right font-bold text-indigo-900">Gross Required</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                        {% for b in bom %}
+                        <tr>
+                            <td class="px-5 py-3.5 font-medium text-slate-900">{{ b.material_name }}</td>
+                            <td class="px-5 py-3.5 text-right font-mono">{{ b.net_kg }} kg</td>
+                            <td class="px-5 py-3.5 text-right font-mono text-amber-600">+ {{ (b.gross_kg - b.net_kg)|round(2) }} kg</td>
+                            <td class="px-5 py-3.5 text-right font-mono font-bold text-indigo-900">{{ b.gross_kg }} kg</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Work Orders History -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-200">
+                    <h3 class="text-base font-bold text-slate-900">Work Orders Execution</h3>
+                    <p class="text-xs text-slate-500">Batches running across spinning, weaving, and dyeing looms</p>
+                </div>
+                <div class="p-5">
+                    {% if order.work_orders %}
+                    <div class="space-y-3">
+                        {% for wo in order.work_orders %}
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-sm">
+                            <div>
+                                <span class="font-bold text-indigo-950 font-mono">WO #{{ wo.id }}</span>
+                                <span class="ml-2 font-semibold uppercase text-xs text-slate-600">[{{ wo.stage }}]</span>
+                                <span class="text-xs text-slate-500 ml-1">on {{ wo.machine.name }}</span>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="font-mono text-xs">{{ wo.completed_meters|int }} / {{ wo.target_meters|int }} m</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase
+                                    {% if wo.status == 'DONE' %}bg-emerald-100 text-emerald-800
+                                    {% elif wo.status == 'RUNNING' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-slate-200 text-slate-700{% endif %}">
+                                    {{ wo.status }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-slate-400 italic">No work orders launched yet. Start weaving or dyeing in Production tab.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Financials & Costing (Right col) -->
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                    <h3 class="text-base font-bold text-slate-900">Order Economics</h3>
+                    <span class="text-xs text-slate-400">Unit Costing</span>
+                </div>
+
+                {% if costing.material_cost is none %}
+                <!-- SERVER-SIDE REDACTED FOR FLOOR ROLE -->
+                <div class="p-4 bg-slate-100 rounded-lg text-center text-slate-500 text-sm">
+                    🔒 <strong class="text-slate-700">Financial Data Restricted</strong>
+                    <p class="text-xs mt-1">Floor role users are restricted from viewing cost, pricing, and margin fields.</p>
+                </div>
+                {% else %}
+                <!-- OWNER FULL VISIBILITY -->
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Sales Revenue</span>
+                        <span class="font-bold text-slate-900 font-mono">₹{{ costing.revenue|round(2) }}</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <span class="text-slate-500">Raw Material Cost</span>
+                        <span class="font-mono text-slate-700">₹{{ costing.material_cost|round(2) }}</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <span class="text-slate-500">Machine Operator Wages</span>
+                        <span class="font-mono text-slate-700">₹{{ costing.wages_cost|round(2) }}</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <span class="text-slate-500">Factory Overheads</span>
+                        <span class="font-mono text-slate-700">₹{{ costing.overhead_cost|round(2) }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-t border-slate-200 font-semibold">
+                        <span class="text-slate-800">Total Production Cost</span>
+                        <span class="font-mono text-slate-900">₹{{ costing.total_cost|round(2) }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 bg-indigo-50 px-3 rounded-lg font-bold">
+                        <span class="text-indigo-900">Net Profit</span>
+                        <span class="font-mono {% if costing.profit >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                            ₹{{ costing.profit|round(2) }} ({{ costing.margin_pct }}%)
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

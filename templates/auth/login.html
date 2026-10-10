@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Login – Warpspeed{% endblock %}
+
+{% block content %}
+<!-- Override the content wrapper for a full-screen login -->
+<style>
+    .content-wrapper { padding: 0; max-width: none; }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="text-center mb-3">
+            <h2>⚡ Warpspeed</h2>
+            <p class="subtitle">Everest Textile Mills – Mini ERP</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <div class="mb-3">
+                <label for="username" class="form-label fw-semibold">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" class="form-control" id="username" name="username"
+                           placeholder="Enter your username" required autofocus>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="form-label fw-semibold">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Enter your password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-ws w-100 py-2">
+                <i class="bi bi-box-arrow-in-right"></i> Sign In
+            </button>
+        </form>
+
+        <div class="mt-4 p-3 rounded" style="background: #f5f5f5; font-size: 0.82rem;">
+            <strong>Demo Accounts:</strong><br>
+            <code>owner/owner</code> · <code>store/store</code> · <code>supervisor/supervisor</code><br>
+            <code>qc/qc</code> · <code>buyer1/buyer1</code> · <code>buyer2/buyer2</code>
+        </div>
+    </div>
+</div>
+{% endblock %}
